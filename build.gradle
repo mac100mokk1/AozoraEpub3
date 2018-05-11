@@ -1,0 +1,12 @@
+apply plugin: 'java'
+
+repositories {
+}
+
+dependencies {
+    compile fileTree(dir: 'lib', includes: ['*.jar'])
+}
+
+jar {
+  manifest.attributes 'Main-Class': 'AozoraEpub3Applet', 'Class-Path': configurations.runtime.collect { 'lib/' + it.name }.join(' ')
+}

@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+
+echo -n "ビルドのための下準備を開始しますよろしいですか？ [yes]/no :"
+read select
+if [ "$select" = "no" ]; then
+  echo "終了します"
+  exit 0
+else
+  :
+fi
+
+echo "ビルドにはgradleコマンドを使える環境が必要です。"
+echo "gradleをインストールしていないと回答した場合build.gradleファイルのみ生成します"
+echo "インストールしてある場合はビルドまで自動で行います"
+echo -n "ビルドを自動実行しますか？ [yes]/no :"
+read select
+if [[ "$select" = "no" ]]; then
+  auto_build=0
+else
+  auto_build=1
+fi
+
+echo -n "パッケージ内にライブラリを内包しますか？ yes/[no] :"
+read select
+if [[ "$select" = "yes" ]]; then
+  include_build=1
+else
+  include_build=0
+fi
+
+if [[ "$auto_build" = 1 ]]; then
+  echo -n "リリースフォルダを作成しますか？ [yes]/no :"
+  read select
+  if [[ "$select" = "no" ]]; then
+    release=0
+  else
+    release=1
+    echo -n "リリースzipを作成しますか？ yes/[no] :"
+    read select
+    if [[ "$select" = "yes" ]]; then
+      release_zip=1
+      echo -n "リリースフォルダを削除しますか？ [yes]/no :"
+      read select
+      if [[ "$select" = "no" ]]; then
+        delete_release=0
+      else
+        delete_release=1
+      fi
+    else
+      release_zip=0
+    fi
+  fi
+fi
+
+if [[ -e build.gradle ]]; then
+  rm -rf build.gradle
+fi
+echo "apply plugin: 'java'" > build.gradle
+echo "" >> build.gradle
+echo "repositories {" >> build.gradle
+echo "}" >>build.gradle
+echo "" >> build.gradle
+echo "dependencies {" >> build.gradle
+echo "    compile fileTree(dir: 'lib', includes: ['*.jar'])" >> build.gradle
+echo "}" >> build.gradle
+echo "" >> build.gradle
+echo "jar {" >> build.gradle
+
+if [[ "$include_build" = "1" ]]; then
+  echo "  manifest.attributes 'Main-Class': 'AozoraEpub3Applet', 'Class-Path': '. lib/commons-lang-2.4.jar lib/commons-compress-1.0.jar lib/commons-cli-1.2.jar lib/commons-collections-3.2.1.jar lib/commons-logging-api-1.0.4.jar lib/jai_codec.jar lib/jai_core.jar lib/jsoup-1.7.1.jar lib/junrar-0.7.jar lib/velocity-1.7.jar'" >> build.gradle
+  echo "  from configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }" >> build.gradle
+else
+  echo "  manifest.attributes 'Main-Class': 'AozoraEpub3Applet', 'Class-Path': configurations.runtime.collect { 'lib/' + it.name }.join(' ')" >> build.gradle
+fi
+echo "}" >> build.gradle
+
+echo "build.gradleの生成が完了しました"
+if [[ "$auto_build" = "1" ]]; then
+  ./gradlew clean
+  ./gradlew build
+  if [[ "$?" = "0" ]]; then
+    error=0
+  else
+    error=1
+  fi
+
+  if [[ "$release" = "1" ]]; then
+    if [[ -e "./release" ]]; then
+      echo "deleting old temp folder"
+      rm -rf ./release
+      echo "success"
+    fi
+    if [[ -e "./AozoraEpub3" ]]; then
+      echo "deleteing old release folder"
+      rm -rf ./AozoraEpub3
+      echo "success"
+    fi
+    echo "createing release"
+    mkdir release
+    cp -r ./gaiji ./release/
+#    cp -r ./images ./release/
+    cp -r ./lib ./release/
+    cp -r ./presets ./release/
+#    cp -r ./profiles ./release/
+    cp -r ./template ./release/
+    cp -r ./web ./release/
+    cp ./AozoraEpub3.ico ./release/
+    cp ./*.txt ./release/
+    cp ./build/libs/*.jar ./release/AozoraEpub3.jar
+
+    mv release AozoraEpub3
+    echo "Complete"
+    if [[ "$release_zip" = "1" ]]; then
+      if [[ -e "AozoraEpub3.zip" ]]; then
+        rm -rf AozoraEpub3.zip
+      fi
+      echo "createing zip file"
+      zip -r AozoraEpub3.zip AozoraEpub3
+      if [[ "$delete_release" = "1" ]]; then
+        rm -rf AozoraEpub3
+      fi
+      echo "success"
+    fi
+  fi
+  if [[ "$error" = "0" ]]; then
+    echo "Complete!!!"
+    exit 0
+  else
+    echo "Build Error ><"
+    exit 1
+  fi
+else
+  echo "Complete!!!"
+  exit 0
+fi
+echo "Complete???"
+exit "-1"
