@@ -1860,6 +1860,7 @@ public class AozoraEpub3Converter
 				////////////////////////////////////////////////////////////////
 				//改ページ注記
 				////////////////////////////////////////////////////////////////
+				LogAppender.println(chukiName);
 				if (chukiFlagPageBreak.contains(chukiName) && !bookInfo.isNoPageBreakLine(lineNum)) {
 					//字下げ状態エラー出力
 					if (inJisage >= 0) {
@@ -1901,7 +1902,6 @@ public class AozoraEpub3Converter
 					}
 				}
 				////////////////////////////////////////////////////////////////
-				
 				//字下げフラグ処理
 				else if (chukiName.endsWith("字下げ")) {
 					if (inJisage >= 0) {
