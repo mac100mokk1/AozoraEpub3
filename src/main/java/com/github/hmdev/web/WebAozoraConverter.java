@@ -219,7 +219,7 @@ public class WebAozoraConverter
 			HttpURLConnection connection = null;
 			try {
 				connection = (HttpURLConnection) new URL(urlString+"/").openConnection();
-				if (connection.getResponseCode() == 200) {
+				if (connection.getResponseCode() == 200 || connection.getResponseCode() == 302) {
 					urlString += "/";
 					LogAppender.println("URL修正 : "+urlString);
 				}
